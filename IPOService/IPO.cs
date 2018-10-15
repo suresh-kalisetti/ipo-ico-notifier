@@ -24,6 +24,7 @@ namespace IPOService
         public decimal Rating;
         public string Review;
         public string Url;
+        public string Subscription;
     }
     public class IPO
     {
@@ -132,6 +133,7 @@ namespace IPOService
                             temp.Rating = rdr.GetDecimal(6);
                             temp.Review = rdr.GetString(7);
                             temp.Url = rdr.GetString(8);
+                            temp.Subscription = rdr.GetString(9);
                             result.Add(temp);
                         }
                     }
@@ -237,13 +239,39 @@ namespace IPOService
             var ipo = finalIPO[i];
             HtmlWeb web = new HtmlWeb();
             HtmlDocument doc = web.Load(ipo.Url);
-            List<IPODetails> result = new List<IPODetails>();
             ipo.Count = Convert.ToInt32(doc.DocumentNode.SelectSingleNode("//span[@class='voteres']").InnerText);
             ipo.Rating = Convert.ToDecimal(doc.DocumentNode.SelectSingleNode("//span[@class='cyel']").InnerText);
             var reviewnode = doc.DocumentNode.SelectSingleNode("//a[@title='Dilip Davda Review']");
             if (reviewnode != null)
             {
                 ipo.Review = doc.DocumentNode.SelectSingleNode("//a[@title='Dilip Davda Review']").InnerText.Replace("Dilip Davda - ", "");
+            }
+            finalIPO[i] = ipo;
+            GetSubscriptionDetails(i);
+        }
+
+        public void GetSubscriptionDetails(int i)
+        {
+            var ipo = finalIPO[i];
+            HtmlWeb web = new HtmlWeb();
+            HtmlDocument doc = web.Load(ipo.Url.Replace("/ipo/", "/ipo_subscription/"));
+            HtmlNodeCollection tables = doc.DocumentNode.SelectNodes("//table");
+            foreach(HtmlNode table in tables)
+            {
+                if(table.InnerHtml.Contains("subscribed till now?"))
+                {
+                    HtmlNodeCollection trlist = table.SelectNodes(".//tr");
+                    if (trlist.Count - 2 >= 0)
+                    {
+                        HtmlNode latestdetails = trlist[trlist.Count - 2];
+                        HtmlNodeCollection tdlist = latestdetails.SelectNodes(".//td");
+                        if (tdlist.Count - 1 >= 0)
+                        {
+                            HtmlNode totalsubs = tdlist[tdlist.Count - 1];
+                            ipo.Subscription = totalsubs.InnerText;
+                        }                        
+                    }                    
+                }
             }
             finalIPO[i] = ipo;
         }
@@ -264,24 +292,26 @@ namespace IPOService
             foreach (var ipo in newIPO)
             {
                 string temp = "</br><li><b>"+ipo.Name+"</b>";
-                temp += "<ul><li>Type   :   " + ipo.Type + "</li>";
-                temp += "<li>Start  :   " + ipo.Start.ToShortDateString() + "</li>";
-                temp += "<li>End    :   " + ipo.End.ToShortDateString() + "</li>";
-                temp += "<li>Count  :   " + ipo.Count + "</li>";
-                temp += "<li>Rating :   " + ipo.Rating + "</li>";
-                temp += "<li>Review :   " + ipo.Review + "</li>";
+                temp += "<ul><li>Type     :   " + ipo.Type + "</li>";
+                temp += "<li>Start        :   " + ipo.Start.ToShortDateString() + "</li>";
+                temp += "<li>End          :   " + ipo.End.ToShortDateString() + "</li>";
+                temp += "<li>Count        :   " + ipo.Count + "</li>";
+                temp += "<li>Rating       :   " + ipo.Rating + "</li>";
+                temp += "<li>Review       :   " + ipo.Review + "</li>";
+                temp += "<li>Subscription :   " + ipo.Subscription + "</li>";
                 temp += "<li>Url    :   <a href = \""+ ipo.Url +"\">Click</a></li></ul></li></br>";
                 body += temp;
             }
             foreach (var ipo in endingIPO)
             {
                 string temp = "</br><li><b>" + ipo.Name + "</b>";
-                temp += "<ul><li>Type   :   " + ipo.Type + "</li>";
-                temp += "<li>Start  :   " + ipo.Start.ToShortDateString() + "</li>";
-                temp += "<li>End    :   " + ipo.End.ToShortDateString() + "</li>";
-                temp += "<li>Count  :   " + ipo.Count + "</li>";
-                temp += "<li>Rating :   " + ipo.Rating + "</li>";
-                temp += "<li>Review :   " + ipo.Review + "</li>";
+                temp += "<ul><li>Type     :   " + ipo.Type + "</li>";
+                temp += "<li>Start        :   " + ipo.Start.ToShortDateString() + "</li>";
+                temp += "<li>End          :   " + ipo.End.ToShortDateString() + "</li>";
+                temp += "<li>Count        :   " + ipo.Count + "</li>";
+                temp += "<li>Rating       :   " + ipo.Rating + "</li>";
+                temp += "<li>Review       :   " + ipo.Review + "</li>";
+                temp += "<li>Subscription :   " + ipo.Subscription + "</li>";
                 temp += "<li>Url    :   <a href = \"" + ipo.Url + "\">Click</a></li></ul></li></br>";
                 body += temp;
             }
@@ -315,11 +345,11 @@ namespace IPOService
                     string query = "";
                     if (count > 0)
                     {
-                        query = "UPDATE IPO SET Start='" + ipo.Start.ToShortDateString() + "',End='" + ipo.End.ToShortDateString() + "',Count=" + ipo.Count + ",Rating=" + ipo.Rating + ",Review='" + ipo.Review + "',Url='" + ipo.Url + "',UpdatedDate='" + GetTime().ToShortDateString() + "' WHERE Name='" + ipo.Name + "'";
+                        query = "UPDATE IPO SET Start='" + ipo.Start.ToShortDateString() + "',End='" + ipo.End.ToShortDateString() + "',Count=" + ipo.Count + ",Rating=" + ipo.Rating + ",Review='" + ipo.Review + "',Url='" + ipo.Url + ",Subscription='" + ipo.Subscription + "',UpdatedDate='" + GetTime().ToShortDateString() + "' WHERE Name='" + ipo.Name + "'";
                     }
                     else
                     {
-                        query = "INSERT INTO IPO (Name,Type,Start,End,Count,Rating,Review,Url,UpdatedDate) VALUES ('" + ipo.Name + "','" + ipo.Type + "','" + ipo.Start + "','" + ipo.End + "'," + ipo.Count + "," + ipo.Rating + ",'" + ipo.Review + "','" + ipo.Url + "','" + GetTime().ToShortDateString() + "')";
+                        query = "INSERT INTO IPO (Name,Type,Start,End,Count,Rating,Review,Url,Subscription,UpdatedDate) VALUES ('" + ipo.Name + "','" + ipo.Type + "','" + ipo.Start + "','" + ipo.End + "'," + ipo.Count + "," + ipo.Rating + ",'" + ipo.Review + "','" + ipo.Url + "','" + ipo.Subscription + "','" + GetTime().ToShortDateString() + "')";
                         newIPO.Add(ipo);
                     }
                     cmd.CommandText = query;
@@ -342,6 +372,7 @@ namespace IPOService
                                   [Rating] DECIMAL(5,2) NULL,
                                   [Review] NVARCHAR(50) NULL,
                                   [Url] NVARCHAR(1000) NULL,
+                                  [Subscription] NVARCHAR(50) NULL,
                                   [UpdatedDate] DATETIME NOT NULL)";
             string tableQuery2 = @"CREATE TABLE IF NOT EXISTS
                                   [IPONotification] (

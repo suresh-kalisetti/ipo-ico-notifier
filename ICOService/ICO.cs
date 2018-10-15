@@ -188,6 +188,7 @@ namespace ICOService
                                   [Rating] DECIMAL(5,2) NULL,
                                   [Review] NVARCHAR(50) NULL,
                                   [Url] NVARCHAR(1000) NULL,
+                                  [Subscription] NVARCHAR(50) NULL,
                                   [UpdatedDate] DATETIME NOT NULL)";
             string tableQuery2 = @"CREATE TABLE IF NOT EXISTS
                                   [IPONotification] (
